@@ -12,7 +12,7 @@ This template created:
 
 ### Set the environment
 
-* Install the AWC CLI (http://docs.aws.amazon.com/cli/latest/userguide/installing.html)
+* Install the AWS CLI (http://docs.aws.amazon.com/cli/latest/userguide/installing.html)
 * Set the correct AWS profile: `export AWS_DEFAULT_PROFILE=myprofile` or
 * `export AWS_ACCESS_KEY_ID=myaccesskey; export AWS_SECRET_ACCESS_KEY=mysecretaccesskey`
 
@@ -42,7 +42,7 @@ the same AWS Region where you create the AWS CloudFormation stack.
 The DNS entry you have configured (or will configure if the _CloudFront_ resource has not been created yet) to point
 to the _CloudFront_ distribution.
 
-#### `Application` and 'Environment`'
+#### `Application` and `Environment`
 
 A descriptive name for the application that will be using the resources created by this stack. Is only used to
 tag the resources (where possible; the _CloudFront_ distribution cannnot be tagged from a _CloudFormation_ template).
@@ -71,7 +71,7 @@ To copy the files with public read permissions to the bucket:
 
 ```
 cd to_where_your_files_are
-aws s3 cp . s3://tryx-testbucket --recursive --acl public-read --sse
+aws s3 cp . s3://yourBucket --recursive --acl public-read --sse
 cd -
 ```
 
