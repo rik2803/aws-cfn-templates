@@ -59,7 +59,7 @@ Resources:
         HttpVersion: http2
         Origins:
           -
-            DomainName: !Join [ "", [ !Ref S3, ".s3-website.", !Ref AWS::Region, ".amazonaws.com" ] ]
+            DomainName: !Join [ "", [ !Ref S3, ".s3-website.", !Ref "AWS::Region", ".amazonaws.com" ] ]
             Id: !Join [ "", [ !Ref S3, "-origin" ] ]
             CustomOriginConfig:
               HTTPPort: 80
