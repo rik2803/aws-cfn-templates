@@ -1,0 +1,317 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Create a VPC.
+
+  Will create a /16 VPC, of which the network part should be entered in the CIDR at creation.
+
+  It will create:
+    - A public subnet 0.0/24 (i.e. for bastion)
+    - A IGW
+    - A Nat FW
+    - 3 Private subnets for applications
+    - 3 Public subnets for ELB
+    - 2 routing tables (private and public)
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "VPC Configuration"
+        Parameters:
+          - VpcName
+          - CIDR
+          - Application
+          - AZs
+
+    ParameterLabels:
+      CIDR:
+        default: "CIDR for the VPC"
+      Application:
+        default: "Application"
+      VpcName:
+        default: "VPC name tag"
+      AZs:
+        default: "Nr of AZs to create subnets in"
+
+Parameters:
+  Application:
+    Type: String
+    Description: "Keyword describing the application (also used for tagging all resources)"
+  CIDR:
+    Type: String
+    Description: "First 2 tuples of the CIDR (.0.0/16 will be added by the template)"
+    AllowedPattern: "^[0-9]+[.][0-9]+$"
+  AZs:
+    Type: String
+    AllowedValues: ["2", "3"]
+    Default: "3"
+  VpcName:
+    Type: String
+    Description: "VPC Name"
+
+Conditions:
+  3AZs: !Equals [ !Ref AZs, 3 ]
+
+Resources:
+  SGDMZ:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn:
+      - VPC
+    Properties:
+      GroupDescription: !Join [ "", [ "DMZ Security Group for ", !Ref VpcName ] ]
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: "22"
+          ToPort: "22"
+          CidrIp: "0.0.0.0/0"
+      Tags:
+        - Key: "Name"
+          Value: !Ref VpcName
+        - Key: "Application"
+          Value: !Ref Application
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".0.0/16" ] ]
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: "default"
+      Tags:
+        - Key: "Name"
+          Value: !Ref VpcName
+        - Key: "Application"
+          Value: !Ref Application
+
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "IGW for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+
+  IGWAttachToVPC:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn:
+      - VPC
+      - IGW
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
+
+  EipNatGw:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: "vpc"
+
+  NatGw:
+    DependsOn:
+      - EipNatGw
+      - IGWAttachToVPC
+      - SubnetPublic
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - EipNatGw
+          - AllocationId
+      SubnetId: !Ref SubnetPublic
+
+  SubnetPublic:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".0.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Public subnet for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+
+  SubnetPrivateAZ1:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Properties:
+      AvailabilityZone: !Select [ "0", !GetAZs ]
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".10.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Private subnet 01 for ", !Ref VpcName ] ]
+  SubnetPrivateAZ2:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Properties:
+      AvailabilityZone: !Select [ "1", !GetAZs ]
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".11.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Private subnet 02 for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+  SubnetPrivateAZ3:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Condition: 3AZs
+    Properties:
+      AvailabilityZone: !Select [ "2", !GetAZs ]
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".12.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Private subnet 03 for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+
+  SubnetPublicLBAZ1:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Properties:
+      AvailabilityZone: !Select [ "0", !GetAZs ]
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".20.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Public ELB subnet 01 for ", !Ref VpcName ] ]
+  SubnetPublicLBAZ2:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Properties:
+      AvailabilityZone: !Select [ "1", !GetAZs ]
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".21.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "", [ "Public ELB subnet 02 for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+  SubnetPublicLBAZ3:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Condition: 3AZs
+    Properties:
+      AvailabilityZone: !Select [ "2", !GetAZs ]
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".22.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Public ELB subnet 03 for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+
+
+  RouteTablePublicSubnet:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Route table for public subnet for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+
+  RouteTablePrivateSubnet:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Route table for private subnet for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+
+  RouteDefaultPublic:
+    Type: AWS::EC2::Route
+    DependsOn:
+      - RouteTablePublicSubnet
+      - VPC
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref IGW
+      RouteTableId: !Ref RouteTablePublicSubnet
+
+  RouteDefaultPrivate:
+    Type: AWS::EC2::Route
+    DependsOn:
+      - RouteTablePrivateSubnet
+      - VPC
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref NatGw
+      RouteTableId: !Ref RouteTablePrivateSubnet
+
+  AssociateRouteForPublicSubnetToPublicSubnet:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RouteTablePublicSubnet
+      SubnetId: !Ref SubnetPublic
+  AssociateRouteForPrivateSubnetToPrivateSubnet01:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RouteTablePrivateSubnet
+      SubnetId: !Ref SubnetPrivateAZ1
+  AssociateRouteForPrivateSubnetToPrivateSubnet02:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RouteTablePrivateSubnet
+      SubnetId: !Ref SubnetPrivateAZ2
+  AssociateRouteForPrivateSubnetToPrivateSubnet03:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Condition: 3AZs
+    Properties:
+      RouteTableId: !Ref RouteTablePrivateSubnet
+      SubnetId: !Ref SubnetPrivateAZ3
+
+  AssociateRouteForPublicELBSubnetToPublicELBSubnet01:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RouteTablePublicSubnet
+      SubnetId: !Ref SubnetPublicLBAZ1
+  AssociateRouteForPublicELBSubnetToPublicELBSubnet02:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref RouteTablePublicSubnet
+      SubnetId: !Ref SubnetPublicLBAZ2
+  AssociateRouteForPublicELBSubnetToPublicELBSubnet03:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Condition: 3AZs
+    Properties:
+      RouteTableId: !Ref RouteTablePublicSubnet
+      SubnetId: !Ref SubnetPublicLBAZ3
+
+Outputs:
+  VPC:
+    Value: !Ref VPC
+    Description: "My VPC"
