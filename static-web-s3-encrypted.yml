@@ -20,12 +20,10 @@ Description: |
         --parameters ParameterKey=Environment,ParameterValue=applicateionEnvironment \
         --region your-region
 
-  To update the stack:
-    - Set the correct AWS profile: AWS_DEFAULT_PROFILE=myprofile
-    - Same command as above, but use update-stack instead of create-stack
+  Replace create by update in aboce command to update the stack:
 
-  To copy the files with public read permissions to the bucket:
-    - cd html; aws s3 cp . s3://tryx-testbucket --recursive --acl public-read --sse ; cd ..
+  To copy the files to S3:
+      - cd html; aws s3 cp . s3://tryx-testbucket --recursive --acl public-read --sse ; cd ..
 
 Parameters:
   BucketName:
