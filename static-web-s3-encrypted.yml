@@ -1,0 +1,147 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Create:
+    - S3 bucket with:
+      - Website enabled
+      - Encrypted data-at-rest
+      - Policy to enforce encryption
+    - Cloudfront configuration
+
+  To create the stack:
+    - Set the correct AWS profile: AWS_DEFAULT_PROFILE=myprofile
+
+    aws cloudformation create-stack \
+        --stack-name myStackName \
+        --template-body file://static-web-s3-encrypted.yml \
+        --parameters ParameterKey=BucketName,ParameterValue=yourBucket \
+        --parameters ParameterKey=CloudFrontCNAME,ParameterValue=yourDNSPointingToTheCloudFrontDistribution \
+        --parameters ParameterKey=Application,ParameterValue=applicationName \
+        --parameters ParameterKey=Environment,ParameterValue=applicateionEnvironment \
+        --region your-region
+
+  To update the stack:
+    - Set the correct AWS profile: AWS_DEFAULT_PROFILE=myprofile
+    - Same command as above, but use update-stack instead of create-stack
+
+  To copy the files with public read permissions to the bucket:
+    - cd html; aws s3 cp . s3://tryx-testbucket --recursive --acl public-read --sse ; cd ..
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: "Name of the bucket to create"
+  CloudFrontCNAME:
+    Type: String
+    Description: The domain being served by the CloudFront distribution
+  Application:
+    Type: String
+  Environment:
+    Type: String
+
+Resources:
+
+  CloudFrontDistribution:
+    Type: "AWS::CloudFront::Distribution"
+    DependsOn:
+      - S3
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref CloudFrontCNAME
+        Comment: !Join [ "", [ "",  "" ] ]
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: true
+          TargetOriginId: !Join [ "", [ !Ref S3, "-origin" ] ]
+          ViewerProtocolPolicy: allow-all
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          -
+            DomainName: !Join [ "", [ !Ref S3, ".s3-website.", !Ref AWS::Region, ".amazonaws.com" ] ]
+            Id: !Join [ "", [ !Ref S3, "-origin" ] ]
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: http-only
+        PriceClass: PriceClass_100
+      Tags:
+        - Key: "Application"
+          Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
+
+  S3BucketPolicy:
+    DependsOn:
+      - S3
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: PutObjPolicy
+        Statement:
+        - Sid: DenyIncorrectEncryptionHeader
+          Effect: Deny
+          Principal: "*"
+          Action: s3:PutObject
+          Resource: !Join [ "", [ !GetAtt S3.Arn, "/*" ] ]
+          Condition:
+            StringNotEquals:
+              s3:x-amz-server-side-encryption: AES256
+        - Sid: DenyUnEncryptedObjectUploads
+          Effect: Deny
+          Principal: "*"
+          Action: s3:PutObject
+          Resource: !Join [ "", [ !GetAtt S3.Arn, "/*" ] ]
+          Condition:
+            'Null':
+              s3:x-amz-server-side-encryption: 'true'
+
+  S3:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: PublicRead
+      LifecycleConfiguration:
+        Rules:
+          -
+            NoncurrentVersionExpirationInDays: 60
+            Status: Enabled
+
+      VersioningConfiguration:
+        Status: Enabled
+
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+        RoutingRules:
+          - RoutingRuleCondition:
+              KeyPrefixEquals: index.html
+            RedirectRule:
+              ReplaceKeyWith: "static/acl/releases/0.1/index.html"
+              HostName: !Ref CloudFrontCNAME
+              HttpRedirectCode: 307
+          - RoutingRuleCondition:
+              KeyPrefixEquals: "static/acl/releases/0.1/index.html"
+            RedirectRule:
+              ReplaceKeyWith: "static/acl/releases/0.1.2/index.html"
+              HostName: !Ref CloudFrontCNAME
+              HttpRedirectCode: 307
+          - RoutingRuleCondition:
+              KeyPrefixEquals: "static/acl/releases/0.2/index.html"
+            RedirectRule:
+              ReplaceKeyPrefixWith: "static/acl/releases/0.2.1/index.html"
+              HostName: !Ref CloudFrontCNAME
+              HttpRedirectCode: 307
+      Tags:
+        - Key: "Application"
+          Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
+
+Outputs:
+  VPC:
+    Value: !Ref S3
+    Description: "The S3 bucket"
