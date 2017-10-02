@@ -64,11 +64,6 @@ Resources:
               HTTPSPort: 443
               OriginProtocolPolicy: http-only
         PriceClass: PriceClass_100
-      Tags:
-        - Key: "Application"
-          Value: !Ref Application
-        - Key: "Environment"
-          Value: !Ref Environment
 
   S3BucketPolicy:
     DependsOn:
