@@ -68,7 +68,7 @@ Resources:
         PriceClass: PriceClass_100
         ViewerCertificate:
           AcmCertificateArn: !Ref CertificateArn
-          SslSupportMethod: vip
+          SslSupportMethod: sni-only
 
   S3BucketPolicy:
     DependsOn:
