@@ -36,6 +36,8 @@ Parameters:
     Type: String
   Environment:
     Type: String
+  CertificateArn:
+    Type: String
 
 Resources:
 
@@ -64,6 +66,9 @@ Resources:
               HTTPSPort: 443
               OriginProtocolPolicy: http-only
         PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: vip
 
   S3BucketPolicy:
     DependsOn:
