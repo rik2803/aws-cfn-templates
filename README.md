@@ -27,7 +27,8 @@ aws cloudformation create-stack \
     --parameters ParameterKey=BucketName,ParameterValue=yourBucket \
     --parameters ParameterKey=CloudFrontCNAME,ParameterValue=yourDNSPointingToTheCloudFrontDistribution \
     --parameters ParameterKey=Application,ParameterValue=applicationName \
-    --parameters ParameterKey=Environment,ParameterValue=applicateionEnvironment \
+    --parameters ParameterKey=Environment,ParameterValue=applicationEnvironment \
+    --parameters ParameterKey=CertificateArn,ParameterValue=youCertificateArn \
     --region eu-central-1
 ```
 
@@ -44,6 +45,7 @@ aws cloudformation update-stack \
     --parameters ParameterKey=CloudFrontCNAME,ParameterValue=yourDNSPointingToTheCloudFrontDistribution \
     --parameters ParameterKey=Application,ParameterValue=applicationName \
     --parameters ParameterKey=Environment,ParameterValue=applicateionEnvironment \
+    --parameters ParameterKey=CertificateArn,ParameterValue=youCertificateArn \
     --region eu-central-1
 ```
 
@@ -66,6 +68,11 @@ tag the resources (where possible; the _CloudFront_ distribution cannnot be tagg
 
 The environment can be something like `tst`, `prod`, `acc`. `stg` or whatever environment your organization might
 be running.
+
+#### `CertificateArn`
+
+Because security is not optional, so is this parameter. Create a AWS Certificate for the CNAME and pass
+the ARN of the certificate to the _CloudFormation_ template.
 
 ### To copy the files to the S3 bucket
 
