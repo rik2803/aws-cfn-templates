@@ -114,25 +114,6 @@ Resources:
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
-        RoutingRules:
-          - RoutingRuleCondition:
-              KeyPrefixEquals: index.html
-            RedirectRule:
-              ReplaceKeyWith: "static/acl/releases/0.1/index.html"
-              HostName: !Ref CloudFrontCNAME
-              HttpRedirectCode: 307
-          - RoutingRuleCondition:
-              KeyPrefixEquals: "static/acl/releases/0.1/index.html"
-            RedirectRule:
-              ReplaceKeyWith: "static/acl/releases/0.1.2/index.html"
-              HostName: !Ref CloudFrontCNAME
-              HttpRedirectCode: 307
-          - RoutingRuleCondition:
-              KeyPrefixEquals: "static/acl/releases/0.2/index.html"
-            RedirectRule:
-              ReplaceKeyPrefixWith: "static/acl/releases/0.2.1/index.html"
-              HostName: !Ref CloudFrontCNAME
-              HttpRedirectCode: 307
       Tags:
         - Key: "Application"
           Value: !Ref Application
