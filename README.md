@@ -18,7 +18,7 @@ This template creates:
 * Enforced data-at-rest encryption throug a bucket policy
 * Cloudfront configuration with the bucket as origin
  
-###To create the stack
+### To create the stack
 
 ```
 aws cloudformation create-stack \
@@ -33,7 +33,7 @@ aws cloudformation create-stack \
 ```
 
 
-###To update the stack
+### To update the stack
 
 The only difference is the subcommand `update-stack`.
 
