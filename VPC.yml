@@ -24,6 +24,7 @@ Metadata:
           - CIDR
           - Application
           - AZs
+          - RDSSubnets
 
     ParameterLabels:
       CIDR:
@@ -34,6 +35,8 @@ Metadata:
         default: "VPC name tag"
       AZs:
         default: "Nr of AZs to create subnets in"
+      RDSSubnets:
+        default: "Should the template create RDS subnets?"
 
 Parameters:
   Application:
@@ -50,9 +53,20 @@ Parameters:
   VpcName:
     Type: String
     Description: "VPC Name"
+  RDSSubnets:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: false
+    Description: "VPC Name"
 
 Conditions:
   3AZs: !Equals [ !Ref AZs, 3 ]
+  RDSSubnets: !Equals [ !Ref RDSSubnets, "true" ]
+  RDSSubnetsAnd3AZs: !And
+    - !Equals [ !Ref AZs, 3 ]
+    - !Equals [ !Ref RDSSubnets, "true" ]
 
 Resources:
   SGDMZ:
@@ -231,6 +245,54 @@ Resources:
         - Key: "Application"
           Value: !Ref Application
 
+  SubnetPrivateRDSAZ1:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Condition: RDSSubnets
+    Properties:
+      AvailabilityZone: !Select [ "0", !GetAZs ]
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".30.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Private RDS subnet 01 for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+  SubnetPrivateRDSAZ2:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Condition: RDSSubnets
+    Properties:
+      AvailabilityZone: !Select [ "1", !GetAZs ]
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".31.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Private RDS subnet 02 for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
+  SubnetPrivateRDSAZ3:
+    Type: AWS::EC2::Subnet
+    DependsOn:
+      - VPC
+    Condition: RDSSubnetsAnd3AZs
+    Properties:
+      AvailabilityZone: !Select [ "2", !GetAZs ]
+      CidrBlock: !Join [ "", [ !Ref CIDR, ".32.0/24" ] ]
+      MapPublicIpOnLaunch: false
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: "Name"
+          Value: !Join [ " ", [ "Private RDS subnet 03 for ", !Ref VpcName ] ]
+        - Key: "Application"
+          Value: !Ref Application
 
   RouteTablePublicSubnet:
     Type: AWS::EC2::RouteTable
@@ -277,6 +339,7 @@ Resources:
     Properties:
       RouteTableId: !Ref RouteTablePublicSubnet
       SubnetId: !Ref SubnetPublic
+
   AssociateRouteForPrivateSubnetToPrivateSubnet01:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
@@ -293,6 +356,25 @@ Resources:
     Properties:
       RouteTableId: !Ref RouteTablePrivateSubnet
       SubnetId: !Ref SubnetPrivateAZ3
+
+  AssociateRouteForPrivateSubnetToPrivateRDSAZ1:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Condition: RDSSubnets
+    Properties:
+      RouteTableId: !Ref RouteTablePrivateSubnet
+      SubnetId: !Ref SubnetPrivateRDSAZ1
+  AssociateRouteForPrivateSubnetToPrivateRDSAZ2:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Condition: RDSSubnets
+    Properties:
+      RouteTableId: !Ref RouteTablePrivateSubnet
+      SubnetId: !Ref SubnetPrivateRDSAZ2
+  AssociateRouteForPrivateSubnetToPrivateRDSAZ3:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Condition: RDSSubnetsAnd3AZs
+    Properties:
+      RouteTableId: !Ref RouteTablePrivateSubnet
+      SubnetId: !Ref SubnetPrivateRDSAZ3
 
   AssociateRouteForPublicELBSubnetToPublicELBSubnet01:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
