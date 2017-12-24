@@ -397,3 +397,15 @@ Outputs:
   VPC:
     Value: !Ref VPC
     Description: "My VPC"
+  RDSSubnetAZ1:
+    Value: !Ref SubnetPrivateRDSAZ1
+    Description: "RDS Subnet in AZ1"
+    Condition: RDSSubnets
+  RDSSubnetAZ2:
+    Value: !Ref SubnetPrivateRDSAZ2
+    Description: "RDS Subnet in AZ2"
+    Condition: RDSSubnets
+  RDSSubnetAZ3:
+    Value: !Ref SubnetPrivateRDSAZ3
+    Description: "RDS Subnet in AZ3"
+    Condition: RDSSubnetsAnd3AZs
