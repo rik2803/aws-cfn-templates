@@ -1,0 +1,66 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Create a Bastion host
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "VPC Information"
+        Parameters:
+          - VPCStackName
+      -
+        Label:
+          default: "Bastion Configuration"
+        Parameters:
+          - KeyPairName
+
+    ParameterLabels:
+      VPCStackName:
+        default: "Name of stack used to create the VPC"
+      KeyPairName:
+        default: "Name of key pair"
+
+Parameters:
+  VPCStackName:
+    Type: String
+    Description: "Name of the Stack used to create the VPC"
+  KeyPairName:
+    Type: String
+    Description: "KeyPair Name"
+    MinLength: 4
+    MaxLength: 40
+    AllowedPattern: "[a-zA-Z0-9-_][a-zA-Z0-9-_]*"
+    ConstraintDescription: must only contain letters, numbers and dash or underscore.
+
+Resources:
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      ImageId: ami-29ae2546 # Amazon Linux 2 ami for eu-central-1
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId:
+            Fn::ImportValue:
+              !Sub "${VPCStackName}-SubnetPublic"
+          GroupSet:
+            - Fn::ImportValue:
+                  !Sub "${VPCStackName}-SGDMZ"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum install -y tcpdump mariadb telnet python-pip
+          yum update -y
+      Tags:
+        - Key: "Name"
+          Value: "Bastion host"
+        - Key: "Application"
+          Value:
+            Fn::ImportValue:
+              !Sub "${VPCStackName}-Application"

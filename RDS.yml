@@ -1,0 +1,88 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Create a MySQL RDS instance.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "VPC Information"
+        Parameters:
+          - VPCStackName
+      -
+        Label:
+          default: "RDS Configuration"
+        Parameters:
+          - DBName
+          - DBUser
+          - DBPassword
+
+    ParameterLabels:
+      VPCStackName:
+        default: "Name of stack used to create the VPC"
+      DBName:
+        default: "DB Name"
+      DBUser:
+        default: "DB User"
+      DBPassword:
+        default: "DB Password"
+
+Parameters:
+  VPCStackName:
+    Type: String
+    Description: "Keyword describing the application (also used for tagging all resources)"
+  DBName:
+    Type: String
+    Description: "Database Name"
+    MinLength: 6
+    MaxLength: 16
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  DBUser:
+    Type: String
+    Description: "Database User"
+    MinLength: 6
+    MaxLength: 16
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  DBPassword:
+    Type: String
+    Description: "Database Password"
+    MinLength: 10
+    MaxLength: 20
+    AllowedPattern: "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{8,}$"
+    ConstraintDescription: must contain a number, lowercase, uppercase, special character, no whitespace and be at least 8 characters long.
+    NoEcho: true
+
+Resources:
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: DBSubnetGroup
+      SubnetIds:
+        - Fn::ImportValue:
+            !Sub "${VPCStackName}-RDSSubnetAZ1"
+        - Fn::ImportValue:
+            !Sub "${VPCStackName}-RDSSubnetAZ2"
+        - Fn::ImportValue:
+            !Sub "${VPCStackName}-RDSSubnetAZ3"
+      Tags:
+        - Key: "Application"
+          Value:
+            Fn::ImportValue:
+              !Sub "${VPCStackName}-Application"
+  RDS:
+    Type: AWS::RDS::DBInstance
+    Properties: 
+      AllocatedStorage: 5
+      DBInstanceClass: db.t2.micro
+      Engine: MySQL
+      DBName: !Ref DBName
+      MasterUsername: !Ref DBUser
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - Fn::ImportValue:
+            !Sub "${VPCStackName}-SGRDS"

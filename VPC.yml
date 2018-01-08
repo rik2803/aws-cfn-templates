@@ -9,8 +9,9 @@ Description: |
     - A public subnet 0.0/24 (i.e. for bastion)
     - A IGW
     - A Nat FW
-    - 3 Private subnets for applications
-    - 3 Public subnets for ELB
+    - 2 or 3 Private subnets for applications
+    - 2 or 3 Private subnets for RDS (optionally)
+    - 1 Public subnet for ELB
     - 2 routing tables (private and public)
 
 Metadata:
@@ -81,6 +82,40 @@ Resources:
           FromPort: "22"
           ToPort: "22"
           CidrIp: "0.0.0.0/0"
+      Tags:
+        - Key: "Name"
+          Value: !Ref VpcName
+        - Key: "Application"
+          Value: !Ref Application
+  SGRDS:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn:
+      - VPC
+      - SubnetPrivateAZ1
+      - SubnetPrivateAZ1
+      - SubnetPrivateAZ1
+      - SubnetPublic
+    Condition: 3AZs
+    Properties:
+      GroupDescription: !Join [ "", [ "RDS Security Group for ", !Ref VpcName, " allows access from the private subnet" ] ]
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          ToPort: "3306"
+          FromPort: "3306"
+          CidrIp: !Join [ "", [ !Ref CIDR, ".10.0/24" ] ]
+        - IpProtocol: "tcp"
+          ToPort: "3306"
+          FromPort: "3306"
+          CidrIp: !Join [ "", [ !Ref CIDR, ".11.0/24" ] ]
+        - IpProtocol: "tcp"
+          ToPort: "3306"
+          FromPort: "3306"
+          CidrIp: !Join [ "", [ !Ref CIDR, ".12.0/24" ] ]
+        - IpProtocol: "tcp"
+          ToPort: "3306"
+          FromPort: "3306"
+          CidrIp: !Join [ "", [ !Ref CIDR, ".0.0/24" ] ]
       Tags:
         - Key: "Name"
           Value: !Ref VpcName
@@ -394,18 +429,52 @@ Resources:
       SubnetId: !Ref SubnetPublicLBAZ3
 
 Outputs:
+  Application:
+    Value: !Ref Application
+    Description: Application
+    Export:
+      Name: !Sub "${AWS::StackName}-Application"
+  AZs:
+    Value: !Ref AZs
+    Description: Nr of AZs in VPC config
+    Export:
+      Name: !Sub "${AWS::StackName}-AZs"
   VPC:
     Value: !Ref VPC
     Description: "My VPC"
+    Export:
+      Name: !Sub "${AWS::StackName}-VPC"
   RDSSubnetAZ1:
     Value: !Ref SubnetPrivateRDSAZ1
     Description: "RDS Subnet in AZ1"
     Condition: RDSSubnets
+    Export:
+      Name: !Sub "${AWS::StackName}-RDSSubnetAZ1"
   RDSSubnetAZ2:
     Value: !Ref SubnetPrivateRDSAZ2
     Description: "RDS Subnet in AZ2"
     Condition: RDSSubnets
+    Export:
+      Name: !Sub "${AWS::StackName}-RDSSubnetAZ2"
   RDSSubnetAZ3:
     Value: !Ref SubnetPrivateRDSAZ3
     Description: "RDS Subnet in AZ3"
     Condition: RDSSubnetsAnd3AZs
+    Export:
+      Name: !Sub "${AWS::StackName}-RDSSubnetAZ3"
+  SubnetPublic:
+    Value: !Ref SubnetPublic
+    Description: "Public subnet"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetPublic"
+  SGRDS:
+    Value: !GetAtt [SGRDS, GroupId]
+    Description: "RDS Security Group"
+    Condition: RDSSubnets
+    Export:
+      Name: !Sub "${AWS::StackName}-SGRDS"
+  SGDMZ:
+    Value: !GetAtt [SGDMZ, GroupId]
+    Description: "DMZ Security Group"
+    Export:
+      Name: !Sub "${AWS::StackName}-SGDMZ"

@@ -9,7 +9,7 @@ to comply with the _least privilege_ best practice.
 * Set the correct AWS profile: `export AWS_DEFAULT_PROFILE=myprofile` or
 * `export AWS_ACCESS_KEY_ID=myaccesskey; export AWS_SECRET_ACCESS_KEY=mysecretaccesskey`
 
-## static-web-s3-encrypted.yml
+## `static-web-s3-encrypted.yml`
 
 This template creates:
 
@@ -87,14 +87,14 @@ cd -
 Note that the `--sse` switch is required because the buckets policy is set to only accept encrypted puts. This is 
 put in place to enforce encryption of data at rest.
 
-## VPC.yml
+## `VPC.yml`
 
 The first 2 octets (`xxx.yyy`) of the VPN CIDR are an input parameter for the template. The created VPN is
 always a `/16` network.
 
 This template creates:
 
-* A public subnet `0.0/24` (i.e. for bastion)
+* A public subnet `xxx.yyy.0.0/24` (i.e. for bastion)
 * A IGW
 * A NAT GW
 * 3 (or 2) Private subnets for applications
@@ -105,9 +105,13 @@ This template creates:
   * `xxx.yyy.20.0/24`
   * `xxx.yyy.21.0/24`
   * `xxx.yyy.22.0/24`
+* 3 (or 2) Public subnets for RDS (optional)
+  * `xxx.yyy.30.0/24`
+  * `xxx.yyy.31.0/24`
+  * `xxx.yyy.32.0/24`
 * 2 routing tables (private and public)
 
-###To create the stack
+### To create the stack
 
 ```
 aws cloudformation create-stack \
@@ -117,6 +121,7 @@ aws cloudformation create-stack \
     --parameters ParameterKey=CIDR,ParameterValue=172.12 \
     --parameters ParameterKey=AZs,ParameterValue=3 \
     --parameters ParameterKey=VpcName,ParameterValue=myVPC \
+    --parameters ParameterKey=RDSSubNets,ParameterValue=true \
     --region eu-central-1
 ```
 
@@ -141,3 +146,64 @@ The name of the VPC
 
 A string to define the application running in this VPC. Alos used to tag the resources
 created by the template.
+
+## `RDS.yml`
+
+### To create the stack
+
+```
+aws cloudformation create-stack \
+    --stack-name myStackName \
+    --template-body file://RDS.yml \
+    --parameters ParameterKey=VPCStackName,ParameterValue=nameOgMyVPCStack \
+    --parameters ParameterKey=DBName,ParameterValue=myDatabase \
+    --parameters ParameterKey=DBUser,ParameterValue=myDatabaseUser \
+    --parameters ParameterKey=DBPassword,ParameterValue=myDatabasePassword \
+    --region eu-central-1
+```
+
+### The _CloudFormation_ parameters used in the template are:
+
+#### `VPCStackName`
+
+This template uses exported resources from the stack created with the `VPC.yml`
+CFN template. To be able to extract the values, the name of the stack has to
+be known.
+
+#### `DBName`
+
+The name of the DB that will be created.
+
+#### `DBUser`
+
+The user name to connect to the DB.
+
+#### `DBPassword`
+
+The password to connect to the DB.
+
+## `BastionHost.yml`
+
+### To create the stack
+
+```
+aws cloudformation create-stack \
+    --stack-name myStackName \
+    --template-body file://BastionHost.yml \
+    --parameters ParameterKey=VPCStackName,ParameterValue=nameOgMyVPCStack \
+    --parameters ParameterKey=KeyPaitName,ParameterValue=myKeyPair \
+    --region eu-central-1
+```
+
+### The _CloudFormation_ parameters used in the template are:
+
+#### `VPCStackName`
+
+This template uses exported resources from the stack created with the `VPC.yml`
+CFN template. To be able to extract the values, the name of the stack has to
+be known.
+
+#### `KeyPairName`
+
+The name of the keypair that will have to be used to ssh into the
+bastion host.
