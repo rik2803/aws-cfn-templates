@@ -91,31 +91,69 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     DependsOn:
       - VPC
-      - SubnetPrivateAZ1
-      - SubnetPrivateAZ1
-      - SubnetPrivateAZ1
-      - SubnetPublic
-    Condition: 3AZs
     Properties:
       GroupDescription: !Join [ "", [ "RDS Security Group for ", !Ref VpcName, " allows access from the private subnet" ] ]
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: "tcp"
-          ToPort: "3306"
           FromPort: "3306"
-          CidrIp: !Join [ "", [ !Ref CIDR, ".10.0/24" ] ]
+          ToPort: "3306"
+          SourceSecurityGroupId: !Ref SGAPP
         - IpProtocol: "tcp"
-          ToPort: "3306"
-          FromPort: "3306"
-          CidrIp: !Join [ "", [ !Ref CIDR, ".11.0/24" ] ]
+          FromPort: "5432"
+          ToPort: "5432"
+          SourceSecurityGroupId: !Ref SGAPP
         - IpProtocol: "tcp"
-          ToPort: "3306"
           FromPort: "3306"
-          CidrIp: !Join [ "", [ !Ref CIDR, ".12.0/24" ] ]
+          ToPort: "3306"
+          SourceSecurityGroupId: !Ref SGDMZ
         - IpProtocol: "tcp"
-          ToPort: "3306"
-          FromPort: "3306"
-          CidrIp: !Join [ "", [ !Ref CIDR, ".0.0/24" ] ]
+          FromPort: "5432"
+          ToPort: "5432"
+          SourceSecurityGroupId: !Ref SGDMZ
+      Tags:
+        - Key: "Name"
+          Value: !Ref VpcName
+        - Key: "Application"
+          Value: !Ref Application
+  SGELB:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn:
+      - VPC
+    Properties:
+      GroupDescription: !Join [ "", [ "ELB Security Group for ", !Ref VpcName, " allows access from the internet on HTTP(S)" ] ]
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          ToPort: "80"
+          FromPort: "80"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "tcp"
+          ToPort: "443"
+          FromPort: "443"
+          CidrIp: "0.0.0.0/0"
+
+      Tags:
+        - Key: "Name"
+          Value: !Ref VpcName
+        - Key: "Application"
+          Value: !Ref Application
+  SGAPP:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn:
+      - VPC
+    Properties:
+      GroupDescription: !Join [ "", [ "ELB Security Group for ", !Ref VpcName, " allows access from SGELB on all ports and fron SGDMZ on port 22" ] ]
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: "0"
+          ToPort: "65525"
+          SourceSecurityGroupId: !Ref SGELB
+        - IpProtocol: "tcp"
+          FromPort: "22"
+          ToPort: "22"
+          SourceSecurityGroupId: !Ref SGDMZ
       Tags:
         - Key: "Name"
           Value: !Ref VpcName
@@ -478,3 +516,8 @@ Outputs:
     Description: "DMZ Security Group"
     Export:
       Name: !Sub "${AWS::StackName}-SGDMZ"
+  SGAPP:
+    Value: !GetAtt [SGAPP, GroupId]
+    Description: "Application Security Group"
+    Export:
+      Name: !Sub "${AWS::StackName}-SGAPP"
