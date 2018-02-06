@@ -64,3 +64,7 @@ Resources:
           Value:
             Fn::ImportValue:
               !Sub "${VPCStackName}-Application"
+        - Key: "Environment"
+          Value:
+            Fn::ImportValue:
+              !Sub "${VPCStackName}-Environment"
