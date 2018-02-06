@@ -115,3 +115,10 @@ Resources:
           Value:
             Fn::ImportValue:
               !Sub "${VPCStackName}-Environment"
+
+Outputs:
+  RDS:
+    Value: !Ref RDS
+    Description: "RDS DBInstance"
+    Export:
+      Name: !Sub "${AWS::StackName}-RDS"
