@@ -548,6 +548,38 @@ Outputs:
     Condition: RDSSubnetsAnd3AZs
     Export:
       Name: !Sub "${AWS::StackName}-RDSSubnetAZ3"
+  PrivateSubnetAZ1:
+    Value: !Ref SubnetPrivateAZ1
+    Description: "Private Subnet in AZ1"
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetAZ1"
+  PrivateSubnetAZ2:
+    Value: !Ref SubnetPrivateAZ2
+    Description: "Private Subnet in AZ2"
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetAZ2"
+  PrivateSubnetAZ3:
+    Value: !Ref SubnetPrivateAZ3
+    Description: "Private Subnet in AZ3"
+    Condition: 3AZs
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetAZ3"
+  ELBSubnetAZ1:
+    Value: !Ref SubnetPublicLBAZ1
+    Description: "Elastic LoadBalancer Subnet in AZ1"
+    Export:
+      Name: !Sub "${AWS::StackName}-ELBSubnetAZ1"
+  ELBSubnetAZ2:
+    Value: !Ref SubnetPublicLBAZ2
+    Description: "Elastic LoadBalancer Subnet in AZ2"
+    Export:
+      Name: !Sub "${AWS::StackName}-ELBSubnetAZ2"
+  ELBSubnetAZ3:
+    Value: !Ref SubnetPublicLBAZ3
+    Description: "Elastic LoadBalancer Subnet in AZ3"
+    Condition: 3AZs
+    Export:
+      Name: !Sub "${AWS::StackName}-ELBSubnetAZ3"
   SubnetPublic:
     Value: !Ref SubnetPublic
     Description: "Public subnet"
