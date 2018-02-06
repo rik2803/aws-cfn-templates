@@ -25,6 +25,7 @@ Metadata:
           - VpcName
           - CIDR
           - Application
+          - Environment
           - AZs
           - RDSSubnets
       -
@@ -39,6 +40,8 @@ Metadata:
         default: "CIDR for the VPC"
       Application:
         default: "Application"
+      Environment:
+        default: "Environment"
       VpcName:
         default: "VPC name tag"
       AZs:
@@ -54,6 +57,11 @@ Parameters:
   Application:
     Type: String
     Description: "Keyword describing the application (also used for tagging all resources)"
+  Environment:
+    Type: String
+    Description: "Keyword describing the application environment."
+    AllowedValues: ["prd", "stg", "dev"]
+    Default: "dev"
   CIDR:
     Type: String
     Description: "First 2 tuples of the CIDR (.0.0/16 will be added by the template)"
@@ -121,6 +129,8 @@ Resources:
           Value: !Ref VpcName
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
   SGRDS:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -148,6 +158,8 @@ Resources:
           Value: !Ref VpcName
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
   SGELB:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -168,6 +180,8 @@ Resources:
           Value: !Ref VpcName
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
   SGAPP:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -187,6 +201,8 @@ Resources:
           Value: !Ref VpcName
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
 
   VPC:
     Type: AWS::EC2::VPC
@@ -200,6 +216,8 @@ Resources:
           Value: !Ref VpcName
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
 
   IGW:
     Type: AWS::EC2::InternetGateway
@@ -209,6 +227,8 @@ Resources:
           Value: !Join [ " ", [ "IGW for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
 
   IGWAttachToVPC:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -248,6 +268,8 @@ Resources:
           Value: !Join [ " ", [ "Public subnet for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
 
   SubnetPrivateAZ1:
     Type: AWS::EC2::Subnet
@@ -273,6 +295,8 @@ Resources:
           Value: !Join [ " ", [ "Private subnet 02 for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
   SubnetPrivateAZ3:
     Type: AWS::EC2::Subnet
     Condition: 3AZs
@@ -287,6 +311,8 @@ Resources:
           Value: !Join [ " ", [ "Private subnet 03 for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
 
   SubnetPublicLBAZ1:
     Type: AWS::EC2::Subnet
@@ -312,6 +338,8 @@ Resources:
           Value: !Join [ "", [ "Public ELB subnet 02 for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
   SubnetPublicLBAZ3:
     Type: AWS::EC2::Subnet
     Condition: 3AZs
@@ -326,6 +354,8 @@ Resources:
           Value: !Join [ " ", [ "Public ELB subnet 03 for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
 
   SubnetPrivateRDSAZ1:
     Type: AWS::EC2::Subnet
@@ -341,6 +371,8 @@ Resources:
           Value: !Join [ " ", [ "Private RDS subnet 01 for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
   SubnetPrivateRDSAZ2:
     Type: AWS::EC2::Subnet
     Condition: RDSSubnets
@@ -355,6 +387,8 @@ Resources:
           Value: !Join [ " ", [ "Private RDS subnet 02 for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
   SubnetPrivateRDSAZ3:
     Type: AWS::EC2::Subnet
     Condition: RDSSubnetsAnd3AZs
@@ -369,6 +403,8 @@ Resources:
           Value: !Join [ " ", [ "Private RDS subnet 03 for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
 
   RouteTablePublicSubnet:
     Type: AWS::EC2::RouteTable
@@ -379,6 +415,8 @@ Resources:
           Value: !Join [ " ", [ "Route table for public subnet for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
 
   RouteTablePrivateSubnet:
     Type: AWS::EC2::RouteTable
@@ -389,6 +427,8 @@ Resources:
           Value: !Join [ " ", [ "Route table for private subnet for ", !Ref VpcName ] ]
         - Key: "Application"
           Value: !Ref Application
+        - Key: "Environment"
+          Value: !Ref Environment
 
   RouteDefaultPublic:
     Type: AWS::EC2::Route
@@ -475,6 +515,11 @@ Outputs:
     Description: Application
     Export:
       Name: !Sub "${AWS::StackName}-Application"
+  Environment:
+    Value: !Ref Environment
+    Description: Environment
+    Export:
+      Name: !Sub "${AWS::StackName}-Environment"
   AZs:
     Value: !Ref AZs
     Description: Nr of AZs in VPC config
