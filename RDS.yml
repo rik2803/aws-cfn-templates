@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: |
-  Create a MySQL RDS instance.
+  Create a RDS instance.
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -15,6 +15,8 @@ Metadata:
         Label:
           default: "RDS Configuration"
         Parameters:
+          - DBEngine
+          - DBInstanceClass
           - DBName
           - DBUser
           - DBPassword
@@ -22,8 +24,10 @@ Metadata:
     ParameterLabels:
       VPCStackName:
         default: "Name of stack used to create the VPC"
-      DBName:
-        default: "DB Name"
+      DBEngine:
+        default: "DB Engine"
+      DBInstanceClass:
+        default: "DB Instance Class"
       DBUser:
         default: "DB User"
       DBPassword:
@@ -32,7 +36,17 @@ Metadata:
 Parameters:
   VPCStackName:
     Type: String
-    Description: "Keyword describing the application (also used for tagging all resources)"
+    Description: "Name of the stack used to create and configure the VPC"
+  DBEngine:
+    Type: String
+    Description: "Database Engine"
+    AllowedValues: [ "mariadb", "mysql", "postgres" ]
+    Default: "postgres"
+  DBInstanceClass:
+    Type: String
+    Description: "DB Instance Class"
+    AllowedValues: [ "db.t2.micro", "db.t2.small", "db.t2.medium", "db.t2.large", "db.t2.xlarge" ]
+    Default: "db.t2.micro"
   DBName:
     Type: String
     Description: "Database Name"
@@ -51,9 +65,9 @@ Parameters:
     Type: String
     Description: "Database Password"
     MinLength: 10
-    MaxLength: 20
-    AllowedPattern: "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{8,}$"
-    ConstraintDescription: must contain a number, lowercase, uppercase, special character, no whitespace and be at least 8 characters long.
+    MaxLength: 40
+    AllowedPattern: '^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{10,40}$'
+    ConstraintDescription: must contain a number, lowercase, uppercase, special character (but no /, @ or double quote), no whitespace and be between 10 and 40 characters long.
     NoEcho: true
 
 Resources:
@@ -73,16 +87,31 @@ Resources:
           Value:
             Fn::ImportValue:
               !Sub "${VPCStackName}-Application"
+        - Key: "Environment"
+          Value:
+            Fn::ImportValue:
+              !Sub "${VPCStackName}-Environment"
   RDS:
     Type: AWS::RDS::DBInstance
     Properties: 
       AllocatedStorage: 5
-      DBInstanceClass: db.t2.micro
-      Engine: MySQL
-      DBName: !Ref DBName
+      DBInstanceIdentifier: !Ref DBName
+      DBInstanceClass: !Ref DBInstanceClass
+      Engine: !Ref DBEngine
       MasterUsername: !Ref DBUser
       MasterUserPassword: !Ref DBPassword
       DBSubnetGroupName: !Ref DBSubnetGroup
       VPCSecurityGroups:
         - Fn::ImportValue:
             !Sub "${VPCStackName}-SGRDS"
+      Tags:
+        - Key: "Name"
+          Value: !Ref DBName
+        - Key: "Application"
+          Value:
+            Fn::ImportValue:
+              !Sub "${VPCStackName}-Application"
+        - Key: "Environment"
+          Value:
+            Fn::ImportValue:
+              !Sub "${VPCStackName}-Environment"
