@@ -60,7 +60,7 @@ Parameters:
   Environment:
     Type: String
     Description: "Keyword describing the application environment."
-    AllowedValues: ["prd", "stg", "dev"]
+    AllowedValues: ["prd", "stg", "dev", "poc"]
     Default: "dev"
   CIDR:
     Type: String
@@ -255,10 +255,7 @@ Resources:
   SubnetPublic:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone:
-        Fn::Select:
-          - 0
-          - Fn::GetAZs: ""
+      AvailabilityZone: !Select [ "0", !GetAZs ]
       CidrBlock: !Join [ "", [ !Ref CIDR, ".0.0/24" ] ]
       MapPublicIpOnLaunch: false
       VpcId:
@@ -601,3 +598,8 @@ Outputs:
     Description: "Application Security Group"
     Export:
       Name: !Sub "${AWS::StackName}-SGAPP"
+  SGELB:
+    Value: !GetAtt [SGELB, GroupId]
+    Description: "DMZ Security Group"
+    Export:
+      Name: !Sub "${AWS::StackName}-SGELB"
