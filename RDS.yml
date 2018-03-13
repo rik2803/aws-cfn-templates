@@ -17,9 +17,10 @@ Metadata:
         Parameters:
           - DBEngine
           - DBInstanceClass
-          - DBName
+          - DBInstanceID
           - DBUser
           - DBPassword
+          - AllocatedStorage
 
     ParameterLabels:
       VPCStackName:
@@ -32,6 +33,8 @@ Metadata:
         default: "DB User"
       DBPassword:
         default: "DB Password"
+      AllocatedStorage:
+        default: "Storage size tp provision (def 100GB)"
 
 Parameters:
   VPCStackName:
@@ -47,17 +50,16 @@ Parameters:
     Description: "DB Instance Class"
     AllowedValues: [ "db.t2.micro", "db.t2.small", "db.t2.medium", "db.t2.large", "db.t2.xlarge" ]
     Default: "db.t2.micro"
-  DBName:
+  DBInstanceID:
     Type: String
     Description: "Database Name"
     MinLength: 6
-    MaxLength: 16
-    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
-    ConstraintDescription: must begin with a letter and contain only alphanumeric characters and be between 6 and 16 characters long.
+    MaxLength: 63
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters and be between 6 and 63 characters long.
   DBUser:
     Type: String
     Description: "Database User"
-    MinLength: 6
+    MinLength: 4
     MaxLength: 16
     AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
     ConstraintDescription: must begin with a letter and contain only alphanumeric characters and be between 6 and 16 characters long.
@@ -69,6 +71,10 @@ Parameters:
     AllowedPattern: '^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{10,40}$'
     ConstraintDescription: must contain a number, lowercase, uppercase, special character (but no /, @ or double quote), no whitespace and be between 10 and 40 characters long.
     NoEcho: true
+  AllocatedStorage:
+    Type: Number
+    Default: 100
+    Descriptiont: "Volume size (GB) t0 provision (default 100)"
 
 Resources:
   DBSubnetGroup:
@@ -94,19 +100,20 @@ Resources:
   RDS:
     Type: AWS::RDS::DBInstance
     Properties: 
-      AllocatedStorage: 5
-      DBInstanceIdentifier: !Ref DBName
+      AllocatedStorage: !Ref AllocatedStorage
+      DBInstanceIdentifier: !Ref DBInstanceID
       DBInstanceClass: !Ref DBInstanceClass
       Engine: !Ref DBEngine
       MasterUsername: !Ref DBUser
       MasterUserPassword: !Ref DBPassword
       DBSubnetGroupName: !Ref DBSubnetGroup
+      StorageType: gp2
       VPCSecurityGroups:
         - Fn::ImportValue:
             !Sub "${VPCStackName}-SGRDS"
       Tags:
         - Key: "Name"
-          Value: !Ref DBName
+          Value: !Ref DBInstanceID
         - Key: "Application"
           Value:
             Fn::ImportValue:
