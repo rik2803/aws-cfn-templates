@@ -18,9 +18,10 @@ Description: |
         --parameters ParameterKey=CloudFrontCNAME,ParameterValue=yourDNSPointingToTheCloudFrontDistribution \
         --parameters ParameterKey=Application,ParameterValue=applicationName \
         --parameters ParameterKey=Environment,ParameterValue=applicateionEnvironment \
+        --parameters ParameterKey=CertificateArn,ParameterValue=certificateArn \
         --region your-region
 
-  Replace create by update in aboce command to update the stack:
+  Replace create by update in above command to update the stack:
 
   To copy the files to S3:
       - cd html; aws s3 cp . s3://tryx-testbucket --recursive --acl public-read --sse ; cd ..
