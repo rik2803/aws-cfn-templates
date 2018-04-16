@@ -6,22 +6,38 @@ Description: |
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      -
-        Label:
+      - Label:
           default: "VPC Information"
         Parameters:
           - VPCStackName
-      -
-        Label:
+      - Label:
           default: "Bastion Configuration"
         Parameters:
           - KeyPairName
+      - Label:
+          default: "DNS Topic ARN"
+        Parameters:
+          - AddRecordSetTopicARN
+      - Label:
+          default: "Hosted Zone Domainname"
+        Parameters:
+          - HostedZone
+      - Label:
+          default: "Hostname"
+        Parameters:
+          - HostName
 
     ParameterLabels:
       VPCStackName:
         default: "Name of stack used to create the VPC"
       KeyPairName:
-        default: "Name of key pair"
+        default: "Name of key required to access the Bastion instance"
+      AddRecordSetTopicARN:
+        default: "Topic ARN for RecordSet creation"
+      HostedZone:
+        default: "Domainname to add RecodSet in"
+      HostNane:
+        default: "Hostname to add RecodSet in"
 
 Parameters:
   VPCStackName:
@@ -34,6 +50,22 @@ Parameters:
     MaxLength: 40
     AllowedPattern: "[a-zA-Z0-9-_][a-zA-Z0-9-_]*"
     ConstraintDescription: must only contain letters, numbers and dash or underscore.
+  AddRecordSetTopicARN:
+    Type: String
+    Description: |
+      The ARN of the topic used to trigger the Lambda function that in turn adds
+      the recordset to the associated hosted zone
+  HostedZone:
+    Type: String
+    Description: |
+      Name of the hosted zone to add the DNS entry to (domainname)
+  HostName:
+    Type: String
+    Description: |
+      Name of host to use for the bastion
+
+Conditions:
+  AddRecordSet: !Not [!Equals [!Ref AddRecordSetTopicARN, ""]]
 
 Resources:
   BastionHost:
@@ -68,3 +100,18 @@ Resources:
           Value:
             Fn::ImportValue:
               !Sub "${VPCStackName}-Environment"
+  RecordSetForBastionHost:
+    Type: Custom::IPv4
+    Properties:
+      ServiceToken: !Ref AddRecordSetTopicARN
+      Source: !Sub "${HostName}.${HostedZone}"
+      Target: !GetAtt BastionHost.PublicIp
+      RecordType: A
+
+Outputs:
+  Application:
+    Value: !Ref BastionHost
+    Description: The Bastion Host
+    Export:
+      Name: !Sub "${AWS::StackName}-BastionHost"
+
