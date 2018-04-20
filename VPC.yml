@@ -79,7 +79,7 @@ Parameters:
       - true
       - false
     Default: false
-    Description: "VPC Name"
+    Description: "Create RDS subnets?"
 
   SafeSSH01:
     Description: The IP address range that can SSH to the EC2 instance.
