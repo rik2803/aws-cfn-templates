@@ -35,9 +35,9 @@ Metadata:
       AddRecordSetTopicARN:
         default: "Topic ARN for RecordSet creation"
       HostedZone:
-        default: "Domainname to add RecodSet in"
+        default: "Domainname to add RecordSet in"
       HostNane:
-        default: "Hostname to add RecodSet in"
+        default: "Hostname to add RecordSet in"
 
 Parameters:
   VPCStackName:
@@ -48,8 +48,8 @@ Parameters:
     Description: "KeyPair Name"
     MinLength: 4
     MaxLength: 40
-    AllowedPattern: "[a-zA-Z0-9-_][a-zA-Z0-9-_]*"
-    ConstraintDescription: must only contain letters, numbers and dash or underscore.
+    AllowedPattern: "[a-zA-Z0-9-_.][a-zA-Z0-9-_.]*"
+    ConstraintDescription: must only contain letters, numbers, dots and dash or underscore.
   AddRecordSetTopicARN:
     Type: String
     Description: |
