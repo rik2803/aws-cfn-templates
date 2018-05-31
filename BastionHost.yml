@@ -72,7 +72,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       DisableApiTermination: false
-      ImageId: ami-29ae2546 # Amazon Linux 2 ami for eu-central-1
+      ImageId: ami-43eec3a8 # Amazon Linux 2 ami for eu-central-1
       InstanceType: t2.micro
       KeyName: !Ref KeyPairName
       NetworkInterfaces: 
