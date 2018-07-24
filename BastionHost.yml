@@ -102,6 +102,7 @@ Resources:
               !Sub "${VPCStackName}-Environment"
   RecordSetForBastionHost:
     Type: Custom::IPv4
+    Condition: AddRecordSet
     Properties:
       ServiceToken: !Ref AddRecordSetTopicARN
       Source: !Sub "${HostName}.${HostedZone}"
