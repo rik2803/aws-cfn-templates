@@ -60,7 +60,7 @@ Parameters:
   Environment:
     Type: String
     Description: "Keyword describing the application environment."
-    AllowedValues: ["prd", "stg", "dev", "poc"]
+    AllowedValues: ["prd", "acc", "stg", "dev", "poc"]
     Default: "dev"
   CIDR:
     Type: String
