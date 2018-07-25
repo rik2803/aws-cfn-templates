@@ -37,7 +37,7 @@ Metadata:
       DBPassword:
         default: "DB Password"
       AllocatedStorage:
-        default: "Storage size t0 provision (def 100GB)"
+        default: "Storage size to provision (def 100GB)"
       MultiAZ:
         default: "MultiAZ Deployment"
       BackupRetentionPeriod:
@@ -127,7 +127,7 @@ Resources:
       MultiAZ: !Ref MultiAZ
       StorageType: gp2
       PreferredBackupWindow: "01:00-03:00"
-      PreferredMaintenanceWindow: "01:00-03:00"
+      PreferredMaintenanceWindow: "Sat:00:00-03:00"
       VPCSecurityGroups:
         - Fn::ImportValue:
             !Sub "${VPCStackName}-SGRDS"
