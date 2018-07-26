@@ -28,6 +28,7 @@ Metadata:
           - Environment
           - AZs
           - RDSSubnets
+          - NFSForSGAPP
       -
         Label:
           default: "Bastion SG"
@@ -48,6 +49,8 @@ Metadata:
         default: "Nr of AZs to create subnets in"
       RDSSubnets:
         default: "Should the template create RDS subnets?"
+      NFSForSGAPP:
+        default: "Should the template allow NFS ingress traffic to SGAPP from SGAPP?"
       SafeSSH01:
         default: "First IP to allow to connect to resources with DMZ SG"
       SafeSSH02:
@@ -80,6 +83,13 @@ Parameters:
       - false
     Default: false
     Description: "Create RDS subnets?"
+  NFSForSGAPP:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: false
+    Description: "Allow ingress NFS traffic on SGAPP from SGAPP""
 
   SafeSSH01:
     Description: The IP address range that can SSH to the EC2 instance.
@@ -101,6 +111,7 @@ Parameters:
 Conditions:
   3AZs: !Equals [ !Ref AZs, 3 ]
   RDSSubnets: !Equals [ !Ref RDSSubnets, "true" ]
+  NFSForSGAPP: !Equals [ !Ref NFSForSGAPP, "true" ]
   RDSSubnetsAnd3AZs: !And
     - !Equals [ !Ref AZs, 3 ]
     - !Equals [ !Ref RDSSubnets, "true" ]
@@ -185,7 +196,7 @@ Resources:
   SGAPP:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: !Join [ "", [ "ELB Security Group for ", !Ref VpcName, " allows access from SGELB on all ports and fron SGDMZ on port 22" ] ]
+      GroupDescription: !Join [ "", [ "ELB Security Group for ", !Ref VpcName, " allows access from SGELB on all ports and from SGDMZ on port 22" ] ]
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: "tcp"
@@ -204,6 +215,16 @@ Resources:
         - Key: "Environment"
           Value: !Ref Environment
 
+  SGAPPIngressNFS:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: NFSForSGAPP
+    Properties:
+      GroupName: !Ref SGAPP
+      IpProtocol: "tcp"
+      FromPort: "2049"
+      ToPort: "2049"
+      SourceSecurityGroupName: !Ref SGAPP
+      
   VPC:
     Type: AWS::EC2::VPC
     Properties:
