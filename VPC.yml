@@ -89,7 +89,7 @@ Parameters:
       - true
       - false
     Default: false
-    Description: "Allow ingress NFS traffic on SGAPP from SGAPP""
+    Description: "Allow ingress NFS traffic on SGAPP from SGAPP"
 
   SafeSSH01:
     Description: The IP address range that can SSH to the EC2 instance.
