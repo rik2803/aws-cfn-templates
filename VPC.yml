@@ -196,7 +196,7 @@ Resources:
   SGAPP:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: !Join [ "", [ "ELB Security Group for ", !Ref VpcName, " allows access from SGELB on all ports and from SGDMZ on port 22" ] ]
+      GroupDescription: !Join [ "", [ "APP Security Group for ", !Ref VpcName, " allows access from SGELB on all ports and from SGDMZ on port 22" ] ]
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: "tcp"
@@ -219,11 +219,11 @@ Resources:
     Type: AWS::EC2::SecurityGroupIngress
     Condition: NFSForSGAPP
     Properties:
-      GroupName: !Ref SGAPP
+      GroupId: !Ref SGAPP
       IpProtocol: "tcp"
       FromPort: "2049"
       ToPort: "2049"
-      SourceSecurityGroupName: !Ref SGAPP
+      SourceSecurityGroupId: !Ref SGAPP
       
   VPC:
     Type: AWS::EC2::VPC
