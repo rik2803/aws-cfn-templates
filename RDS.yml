@@ -19,6 +19,7 @@ Metadata:
           - DBUser
           - DBPassword
           - AllocatedStorage
+          - CreateDB
       - Label:
           default: "Availability"
         Parameters:
@@ -42,6 +43,8 @@ Metadata:
         default: "MultiAZ Deployment"
       BackupRetentionPeriod:
         default: "Backup retention period"
+      CreateDB:
+        default: "Only create the DB subnet group if false"
 
 Parameters:
   VPCStackName:
@@ -50,7 +53,7 @@ Parameters:
   DBEngine:
     Type: String
     Description: "Database Engine"
-    AllowedValues: [ "mariadb", "mysql", "postgres" ]
+    AllowedValues: [ "mariadb", "mysql", "postgres", "sqlserver-ex" ]
     Default: "postgres"
   DBInstanceClass:
     Type: String
@@ -66,7 +69,7 @@ Parameters:
   DBUser:
     Type: String
     Description: "Database User"
-    MinLength: 4
+    MinLength: 2
     MaxLength: 16
     AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
     ConstraintDescription: must begin with a letter and contain only alphanumeric characters and be between 6 and 16 characters long.
@@ -92,6 +95,14 @@ Parameters:
     AllowedValues: [ true, false ]
     Default: false
     Description: "Setup the RDS instance in MultiAZ"
+  CreateDB:
+    Type: String
+    AllowedValues: [ true, false ]
+    Default: true
+    Description: "Select false to skip DB creation and only create the subnet group"
+
+Conditions:
+  CreateDB: !Equals [ !Ref CreateDB, "true" ]
 
 Resources:
   DBSubnetGroup:
@@ -116,6 +127,7 @@ Resources:
               !Sub "${VPCStackName}-Environment"
   RDS:
     Type: AWS::RDS::DBInstance
+    Condition: CreateDB
     Properties: 
       AllocatedStorage: !Ref AllocatedStorage
       DBInstanceIdentifier: !Ref DBInstanceID
@@ -145,6 +157,7 @@ Resources:
 
 Outputs:
   RDS:
+    Condition: CreateDB
     Value: !Ref RDS
     Description: "RDS DBInstance"
     Export:
