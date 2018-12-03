@@ -654,3 +654,13 @@ Outputs:
     Description: "DMZ Security Group"
     Export:
       Name: !Sub "${AWS::StackName}-SGELB"
+  RouteTablePublicSubnet:
+    Value: !Ref RouteTablePublicSubnet
+    Description: "Public subnet Route Table Id"
+    Export:
+      Name: !Sub "${AWS::StackName}-RouteTablePublicSubnet"
+  RouteTablePrivateSubnet:
+    Value: !Ref RouteTablePrivateSubnet
+    Description: "Private subnet Route Table Id"
+    Export:
+      Name: !Sub "${AWS::StackName}-RouteTablePrivateSubnet"
