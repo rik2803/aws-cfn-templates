@@ -1,1 +1,3 @@
 .idea
+setenv.sh
+deploy_to_s3.bash
